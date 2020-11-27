@@ -21,17 +21,27 @@ def dir_path(string):
 
 def sorted_alphanumeric(data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+
     return sorted(data, key=alphanum_key)
 
-def generate_participants(directory):
+def get_json_files(directory):
     json_files = sorted_alphanumeric([pos_json for pos_json in os.listdir(directory) if pos_json.endswith('.json')])
     json_files.reverse()
 
+    return json_files
+
+def match_nickname_change(message_content):
+    pass
+
+def extract_nickname(message_content):
+    pass
+
+def generate_participants(json_files, in_directory):
     participants_list = []
 
-    for index, js in enumerate(json_files):
-        with open(os.path.join(directory, js)) as json_file:
+    for f in json_files:
+        with open(os.path.join(in_directory, f)) as json_file:
             json_text = json.load(json_file)
 
             messages = json_text['messages']
@@ -43,12 +53,26 @@ def generate_participants(directory):
     
     return participants_list
 
-def generate_graph(directory):
-    participants = generate_participants(directory)
+def generate_nicknames(json_files, in_directory):
+    nickname_change_list = []
 
-    for participant in participants:
-        nickname_dict = {}
-        print(participant)
+    for f in json_files:
+        with open(os.path.join(in_directory, f)) as json_file:
+            json_text = json.load(json_file)
+
+            messages = json_text['messages']
+
+            for message in messages:
+                if 'content' in message:
+                    if match_nickname_change(message['content']):
+                        nickname_change_list.append(extract_nickname(message['content']))
+    
+    return nickname_change_list
+
+def generate_graph(json_files, in_directory):
+    participants = generate_participants(json_files, in_directory)
+    nicknames = generate_nicknames(json_files, in_directory)
+
 
 def main(arguments):
 
@@ -60,8 +84,10 @@ def main(arguments):
                         default=sys.stdout, type=argparse.FileType('w'))
 
     args = parser.parse_args(arguments)
+    in_directory = args.indirectory
 
-    generate_graph(args.indirectory)
+    json_files = get_json_files(in_directory)
+    generate_graph(json_files, in_directory)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
